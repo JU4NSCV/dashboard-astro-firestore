@@ -1,0 +1,155 @@
+---
+import Layout from "../layouts/Layout.astro";
+import { db } from "../lib/firebase";
+import { collection, getDocs } from "firebase/firestore";
+
+// 1. Obtenemos todos los documentos de la colección 'usuarios'
+const usuariosSnapshot = await getDocs(collection(db, "usuarios"));
+
+// 2. Para cada usuario, buscamos su subcolección 'disparos'
+const usuariosConDisparos = await Promise.all(
+  usuariosSnapshot.docs.map(async (userDoc) => {
+    const data = userDoc.data();
+    const idUsuario = userDoc.id;
+    const email = data.email || "Usuario sin email";
+
+    // Subcolección de disparos
+    const disparosRef = collection(db, "usuarios", idUsuario, "disparos");
+    const disparosSnap = await getDocs(disparosRef);
+    
+    const disparos = disparosSnap.docs.map(doc => {
+      const d = doc.data();
+      return {
+        id: doc.id,
+        distancia: d.distancia ?? 0,
+        angulo: d.angulo ?? 0,
+        altura: d.altura ?? 0,
+      };
+    });
+
+    return {
+      idUsuario,
+      email,
+      disparos
+    };
+  })
+);
+---
+
+<Layout title="Historial de Disparos">
+  <div class="max-w-7xl mx-auto p-4 md:p-8 space-y-10">
+    
+    <!-- Encabezado Principal -->
+    <header class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white/5 p-8 rounded-3xl border border-white/10 backdrop-blur-xl shadow-2xl relative overflow-hidden">
+      <!-- Decoración de fondo -->
+      <div class="absolute -top-24 -right-24 w-64 h-64 bg-cyan-500/20 rounded-full blur-3xl pointer-events-none"></div>
+      <div class="absolute -bottom-24 -left-24 w-64 h-64 bg-teal-500/20 rounded-full blur-3xl pointer-events-none"></div>
+      
+      <div class="relative z-10">
+        <h1 class="text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-teal-300 to-green-400">
+          Registro de Disparos
+        </h1>
+        <p class="text-slate-400 mt-2 text-lg">Consulta las métricas y la precisión de los tiros de cada estudiante</p>
+      </div>
+      
+      <div class="relative z-10 flex items-center gap-3 bg-slate-900/50 py-2 px-4 rounded-full border border-slate-700/50">
+        <div class="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></div>
+        <span class="text-sm font-medium text-slate-300">
+          {usuariosConDisparos.reduce((acc, curr) => acc + curr.disparos.length, 0)} Disparos Globales
+        </span>
+      </div>
+    </header>
+
+    <!-- Lista de Usuarios y sus Disparos -->
+    <div class="grid grid-cols-1 gap-8">
+      {usuariosConDisparos.map((user) => (
+        <div class="bg-slate-800/40 rounded-3xl border border-slate-700/50 shadow-2xl backdrop-blur-sm overflow-hidden hover:border-cyan-500/30 transition-all duration-500 group">
+          
+          <!-- Header de Tarjeta de Usuario -->
+          <div class="bg-gradient-to-r from-slate-900/80 to-slate-800/80 p-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-slate-700/50">
+            <div class="flex items-center gap-4">
+              <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-cyan-500 to-teal-500 flex items-center justify-center text-xl font-bold text-white shadow-lg shadow-cyan-500/20 transform group-hover:scale-105 transition-transform duration-300">
+                {user.idUsuario.charAt(0).toUpperCase()}
+              </div>
+              <div>
+                <h2 class="text-white font-bold text-xl">{user.idUsuario}</h2>
+              </div>
+            </div>
+            
+            <div class="flex flex-col items-end">
+              <span class="text-sm text-slate-400">Total de Disparos</span>
+              <span class="text-2xl font-bold text-white">
+                {user.disparos.length}
+              </span>
+            </div>
+          </div>
+
+          <!-- Tabla de Disparos -->
+          <div class="p-6">
+            {user.disparos.length > 0 ? (
+              <div class="bg-slate-900/50 rounded-2xl border border-slate-700/50 overflow-hidden">
+                <div class="overflow-x-auto">
+                  <table class="w-full text-left text-sm whitespace-nowrap">
+                    <thead class="bg-slate-800/80 text-slate-300 border-b border-slate-700">
+                      <tr>
+                        <th class="px-6 py-4 font-semibold">#</th>
+                        <th class="px-6 py-4 font-semibold">
+                          <div class="flex items-center gap-2">
+                            <svg class="w-4 h-4 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                            Ángulo
+                          </div>
+                        </th>
+                        <th class="px-6 py-4 font-semibold">
+                          <div class="flex items-center gap-2">
+                            <svg class="w-4 h-4 text-teal-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>
+                            Distancia
+                          </div>
+                        </th>
+                        <th class="px-6 py-4 font-semibold">
+                          <div class="flex items-center gap-2">
+                            <svg class="w-4 h-4 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"></path></svg>
+                            Altura Máxima
+                          </div>
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-700/50">
+                      {user.disparos.map((disparo, index) => (
+                        <tr class="hover:bg-white/5 transition-colors group">
+                          <td class="px-6 py-4 text-slate-400 font-medium">{index + 1}</td>
+                          <td class="px-6 py-4">
+                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-cyan-500/10 text-cyan-400 font-semibold border border-cyan-500/20">
+                              {Number(disparo.angulo).toFixed(1)}°
+                            </span>
+                          </td>
+                          <td class="px-6 py-4">
+                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-teal-500/10 text-teal-400 font-semibold border border-teal-500/20">
+                              {Number(disparo.distancia).toFixed(2)} m
+                            </span>
+                          </td>
+                          <td class="px-6 py-4">
+                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-indigo-500/10 text-indigo-400 font-semibold border border-indigo-500/20">
+                              {Number(disparo.altura).toFixed(2)} m
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            ) : (
+              <div class="flex flex-col items-center justify-center py-10 bg-slate-900/30 rounded-2xl border border-dashed border-slate-700">
+                <div class="w-16 h-16 bg-slate-800 rounded-full flex items-center justify-center mb-4">
+                  <svg class="w-8 h-8 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                </div>
+                <p class="text-slate-400 text-lg font-medium">Sin datos de disparos</p>
+                <p class="text-slate-500 text-sm mt-1">Este usuario aún no ha realizado ningún tiro en el simulador.</p>
+              </div>
+            )}
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+</Layout>
