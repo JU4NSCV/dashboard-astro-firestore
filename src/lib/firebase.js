@@ -2,12 +2,13 @@ import { initializeApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore"; // Importa Firestore
 
 const firebaseConfig = {
-  apiKey: "AIzaSyCTdQ10Pu9...", // Tus keys actuales
-  authDomain: "loginunity-58dd2.firebaseapp.com",
-  projectId: "loginunity-58dd2",
-  storageBucket: "loginunity-58dd2.firebasestorage.app",
-  messagingSenderId: "1046363395594",
-  appId: "1:1046363395594:web:a2d2a8ff5384fde48ef1f3",
+  apiKey: import.meta.env.PUBLIC_FIREBASE_API_KEY,
+  authDomain: import.meta.env.PUBLIC_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.PUBLIC_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.PUBLIC_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.PUBLIC_FIREBASE_APP_ID,
+  measurementId: import.meta.env.PUBLIC_FIREBASE_MEASUREMENT_ID
 };
 
 // Inicializa Firebase
