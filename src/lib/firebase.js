@@ -1,6 +1,6 @@
 import { initializeApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore"; // Importa Firestore
-
+import { getAuth } from "firebase/auth";
 const firebaseConfig = {
   apiKey: import.meta.env.PUBLIC_FIREBASE_API_KEY,
   authDomain: import.meta.env.PUBLIC_FIREBASE_AUTH_DOMAIN,
@@ -16,3 +16,5 @@ const app = initializeApp(firebaseConfig);
 
 // Exporta la base de datos para usarla en todo el proyecto
 export const db = getFirestore(app);
+
+export const auth = getAuth(app);

@@ -1,0 +1,10 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import DisparosDashboard from "../../components/DisparosDashboard.jsx";
+---
+
+<Layout title="Historial de Disparos">
+  <div class="max-w-7xl mx-auto p-4 md:p-8">
+    <DisparosDashboard client:only="react" />
+  </div>
+</Layout>

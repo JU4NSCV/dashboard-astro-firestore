@@ -1,0 +1,11 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import TestsDashboard from "../../components/TestsDashboard.jsx";
+---
+
+<Layout title="Dashboard Usuarios">
+  <div class="max-w-7xl mx-auto p-4 md:p-8">
+    <!-- Cargamos el componente de React en el cliente -->
+    <TestsDashboard client:only="react" />
+  </div>
+</Layout>
