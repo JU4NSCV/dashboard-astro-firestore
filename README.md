@@ -1,46 +1,51 @@
-# Astro Starter Kit: Basics
+# Dashboard - Simulador de Tiro Parabólico 🚀
 
-```sh
-npm create astro@latest -- --template basics
-```
+Este proyecto es el panel de control (Dashboard) web para un simulador educativo e interactivo de **Tiro Parabólico** desarrollado en Unity. 
 
-> 🧑‍🚀 **Seasoned astronaut?** Delete this file. Have fun!
+Sirve como una herramienta analítica en tiempo real para profesores y estudiantes, permitiendo observar las estadísticas, los resultados de los tests de física y los datos cinemáticos de cada disparo realizado en el juego.
 
-## 🚀 Project Structure
+## 🎮 Juega el Simulador
 
-Inside of your Astro project, you'll see the following folders and files:
+Puedes probar el simulador de física 3D alojado en Itch.io desde el siguiente enlace:
+[**Jugar en Itch.io - Proyecto de Física**](https://piper-ka.itch.io/proyectofisica)
 
-```text
-/
-├── public/
-│   └── favicon.svg
-├── src
-│   ├── assets
-│   │   └── astro.svg
-│   ├── components
-│   │   └── Welcome.astro
-│   ├── layouts
-│   │   └── Layout.astro
-│   └── pages
-│       └── index.astro
-└── package.json
-```
+## ✨ Características del Dashboard
 
-To learn more about the folder structure of an Astro project, refer to [our guide on project structure](https://docs.astro.build/en/basics/project-structure/).
+- **Análisis en Tiempo Real:** Todos los datos (disparos y tests) se sincronizan instantáneamente desde el juego usando Firebase Firestore.
+- **Métricas de Estudiantes:** Visualiza cuántos usuarios están activos, cuántos han aprobado las pruebas y dónde están teniendo dificultades.
+- **Desglose de Disparos:** Analiza la velocidad inicial, ángulo, gravedad y trayectoria de los tiros realizados por los estudiantes.
+- **Diseño Moderno:** Interfaz rápida, accesible y con un diseño atractivo basado en Astro, React y TailwindCSS.
 
-## 🧞 Commands
+## 🛠️ Tecnologías Utilizadas
 
-All commands are run from the root of the project, from a terminal:
+- **[Astro](https://astro.build/)** - Framework web para un rendimiento ultrarrápido y renderizado de páginas estáticas.
+- **[React](https://react.dev/)** - Para la interactividad de las tablas y componentes del panel de control.
+- **[Tailwind CSS](https://tailwindcss.com/)** - Para el estilizado ágil de la interfaz moderna.
+- **[Firebase](https://firebase.google.com/)** - Base de datos en la nube (Firestore) para almacenar la información de las físicas proveniente del juego.
 
-| Command                   | Action                                           |
+## 🚀 Instalación y Desarrollo Local
+
+Si deseas ejecutar este dashboard en tu máquina local:
+
+1. **Clona el repositorio e instala las dependencias:**
+   ```bash
+   npm install
+   ```
+
+2. **Configura Firebase:**
+   Asegúrate de configurar tus credenciales de Firebase en el entorno o directamente en `src/lib/firebase.js`.
+
+3. **Inicia el servidor de desarrollo:**
+   ```bash
+   npm run dev
+   ```
+   El proyecto estará disponible en `http://localhost:4321`.
+
+## 🧞 Comandos Útiles
+
+| Comando                   | Acción                                           |
 | :------------------------ | :----------------------------------------------- |
-| `npm install`             | Installs dependencies                            |
-| `npm run dev`             | Starts local dev server at `localhost:4321`      |
-| `npm run build`           | Build your production site to `./dist/`          |
-| `npm run preview`         | Preview your build locally, before deploying     |
-| `npm run astro ...`       | Run CLI commands like `astro add`, `astro check` |
-| `npm run astro -- --help` | Get help using the Astro CLI                     |
-
-## 👀 Want to learn more?
-
-Feel free to check [our documentation](https://docs.astro.build) or jump into our [Discord server](https://astro.build/chat).
+| `npm install`             | Instala las dependencias del proyecto            |
+| `npm run dev`             | Inicia el servidor local de desarrollo           |
+| `npm run build`           | Construye el sitio para producción en `./dist/`  |
+| `npm run preview`         | Previsualiza el build localmente                 |
