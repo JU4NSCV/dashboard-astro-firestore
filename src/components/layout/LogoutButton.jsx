@@ -1,4 +1,4 @@
-import { auth } from '../lib/firebase';
+import { auth } from '../../lib/firebase';
 import { signOut } from 'firebase/auth';
 
 export default function LogoutButton() {

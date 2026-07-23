@@ -1,9 +1,9 @@
 import { useState, useEffect, useMemo } from 'react';
-import { db } from '../lib/firebase';
+import { db } from '../../lib/firebase';
 import { collection, getDocs } from 'firebase/firestore';
 
-export default function TestsDashboard() {
-    const [listaUsuarios, setListaUsuarios] = useState([]);
+export default function DisparosDashboard() {
+    const [usuariosConDisparos, setUsuariosConDisparos] = useState([]);
     const [loading, setLoading] = useState(true);
 
     // ── Estados de los filtros ──────────────────────────────────────────────
@@ -14,27 +14,23 @@ export default function TestsDashboard() {
 
     // ── Fetch principal ─────────────────────────────────────────────────────
     useEffect(() => {
-        const fetchTests = async () => {
+        const fetchDisparos = async () => {
             try {
                 const usuariosSnapshot = await getDocs(collection(db, 'usuarios'));
 
-                const data = await Promise.all(
-                    usuariosSnapshot.docs.map(async (doc) => {
-                        const userData = doc.data();
-                        const idUsuario = doc.id;
+                const dataFull = await Promise.all(
+                    usuariosSnapshot.docs.map(async (userDoc) => {
+                        const userData = userDoc.data();
+                        const idUsuario = userDoc.id;
 
-                        // Tests del usuario
-                        const infoUltimoTest = userData.ultimoTest || {};
-                        const mapaDeExamenes = infoUltimoTest.tests || {};
+                        // Subcolección de disparos
+                        const disparosRef = collection(db, 'usuarios', idUsuario, 'disparos');
+                        const disparosSnap = await getDocs(disparosRef);
 
-                        const testsFiltrados = Object.entries(mapaDeExamenes)
-                            .filter(([key, value]) => key.startsWith('test') && typeof value === 'object')
-                            .map(([key, value]) => ({
-                                nombreTest: key.replace('test', 'Test '),
-                                aciertos: value.aciertos ?? 0,
-                                errores: value.errores ?? 0,
-                                completado: value.completado ?? false,
-                            }));
+                        const disparos = disparosSnap.docs.map((doc) => ({
+                            id: doc.id,
+                            ...doc.data(),
+                        }));
 
                         // Subcolección formulario
                         let formulario = null;
@@ -51,44 +47,44 @@ export default function TestsDashboard() {
                         return {
                             idUsuario,
                             email: userData.email || 'Sin email',
-                            tests: testsFiltrados,
+                            disparos,
                             formulario,
                         };
                     })
                 );
 
-                setListaUsuarios(data);
+                setUsuariosConDisparos(dataFull);
             } catch (error) {
-                console.error('Error al obtener tests:', error);
+                console.error('Error cargando disparos:', error);
             } finally {
                 setLoading(false);
             }
         };
 
-        fetchTests();
+        fetchDisparos();
     }, []);
 
     // ── Opciones dinámicas para los selects ─────────────────────────────────
     const opcionesCarrera = useMemo(
-        () => [...new Set(listaUsuarios.map((u) => u.formulario?.carrera).filter(Boolean))].sort(),
-        [listaUsuarios]
+        () => [...new Set(usuariosConDisparos.map((u) => u.formulario?.carrera).filter(Boolean))].sort(),
+        [usuariosConDisparos]
     );
     const opcionesPeriodo = useMemo(
-        () => [...new Set(listaUsuarios.map((u) => u.formulario?.periodoAcademico).filter(Boolean))].sort(),
-        [listaUsuarios]
+        () => [...new Set(usuariosConDisparos.map((u) => u.formulario?.periodoAcademico).filter(Boolean))].sort(),
+        [usuariosConDisparos]
     );
     const opcionesParalelo = useMemo(
-        () => [...new Set(listaUsuarios.map((u) => u.formulario?.paralelo).filter(Boolean))].sort(),
-        [listaUsuarios]
+        () => [...new Set(usuariosConDisparos.map((u) => u.formulario?.paralelo).filter(Boolean))].sort(),
+        [usuariosConDisparos]
     );
     const opcionesModalidad = useMemo(
-        () => [...new Set(listaUsuarios.map((u) => u.formulario?.modalidad).filter(Boolean))].sort(),
-        [listaUsuarios]
+        () => [...new Set(usuariosConDisparos.map((u) => u.formulario?.modalidad).filter(Boolean))].sort(),
+        [usuariosConDisparos]
     );
 
     // ── Lógica de filtrado ──────────────────────────────────────────────────
     const usuariosFiltrados = useMemo(() => {
-        return listaUsuarios.filter((user) => {
+        return usuariosConDisparos.filter((user) => {
             const f = user.formulario || {};
             if (filtroCarrera && f.carrera !== filtroCarrera) return false;
             if (filtroPeriodo && f.periodoAcademico !== filtroPeriodo) return false;
@@ -96,43 +92,45 @@ export default function TestsDashboard() {
             if (filtroModalidad && f.modalidad !== filtroModalidad) return false;
             return true;
         });
-    }, [listaUsuarios, filtroCarrera, filtroPeriodo, filtroParalelo, filtroModalidad]);
+    }, [usuariosConDisparos, filtroCarrera, filtroPeriodo, filtroParalelo, filtroModalidad]);
 
     const hayFiltrosActivos = filtroCarrera || filtroPeriodo || filtroParalelo || filtroModalidad;
+    const totalDisparosGlobales = usuariosFiltrados.reduce((acc, curr) => acc + curr.disparos.length, 0);
 
     // ── Clase base compartida para selects ──────────────────────────────────
     const selectClass =
         'w-full bg-slate-900/50 border border-slate-700 text-slate-300 text-sm rounded-xl px-3 py-2.5 ' +
-        'backdrop-blur focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 ' +
+        'backdrop-blur focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500/50 ' +
         'transition-all duration-200 cursor-pointer appearance-none';
 
     // ── Loading state ───────────────────────────────────────────────────────
     if (loading) {
         return (
             <div className="flex flex-col items-center justify-center py-20">
-                <div className="w-12 h-12 border-4 border-indigo-500/30 border-t-indigo-500 rounded-full animate-spin"></div>
-                <p className="text-slate-400 mt-4 animate-pulse">Analizando progreso de estudiantes...</p>
+                <div className="w-12 h-12 border-4 border-cyan-500/30 border-t-cyan-500 rounded-full animate-spin"></div>
+                <p className="text-slate-400 mt-4 animate-pulse">Cargando registros de balística...</p>
             </div>
         );
     }
 
     return (
         <div className="space-y-8">
-            {/* ── Encabezado ─────────────────────────────────────────────── */}
+            {/* ── Encabezado Principal ───────────────────────────────────── */}
             <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white/5 p-8 rounded-3xl border border-white/10 backdrop-blur-xl shadow-2xl relative overflow-hidden">
-                <div className="absolute -top-24 -right-24 w-64 h-64 bg-indigo-500/20 rounded-full blur-3xl pointer-events-none"></div>
+                <div className="absolute -top-24 -right-24 w-64 h-64 bg-cyan-500/20 rounded-full blur-3xl pointer-events-none"></div>
                 <div className="relative z-10">
-                    <h1 className="text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-cyan-400 to-teal-300">
-                        Panel de Usuarios
+                    <h1 className="text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-teal-300 to-green-400">
+                        Registro de Disparos
                     </h1>
-                    <p className="text-slate-400 mt-2 text-lg">Supervisa el progreso y rendimiento de todos los estudiantes</p>
+                    <p className="text-slate-400 mt-2 text-lg">Consulta las métricas y la precisión de los tiros de cada estudiante</p>
                 </div>
+
                 <div className="relative z-10 flex items-center gap-3 bg-slate-900/50 py-2 px-4 rounded-full border border-slate-700/50">
-                    <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+                    <div className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></div>
                     <span className="text-sm font-medium text-slate-300">
                         {hayFiltrosActivos
-                            ? `${usuariosFiltrados.length} de ${listaUsuarios.length} usuarios`
-                            : `${listaUsuarios.length} Usuarios Registrados`}
+                            ? `${totalDisparosGlobales} disparos · ${usuariosFiltrados.length}/${usuariosConDisparos.length} usuarios`
+                            : `${totalDisparosGlobales} Disparos Globales`}
                     </span>
                 </div>
             </header>
@@ -142,7 +140,7 @@ export default function TestsDashboard() {
                 <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-2">
                         {/* Icono filtro */}
-                        <svg className="w-4 h-4 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <svg className="w-4 h-4 text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L13 13.414V19a1 1 0 01-.553.894l-4 2A1 1 0 017 21v-7.586L3.293 6.707A1 1 0 013 6V4z" />
                         </svg>
                         <span className="text-sm font-semibold text-slate-300">Filtrar por</span>
@@ -155,7 +153,7 @@ export default function TestsDashboard() {
                                 setFiltroParalelo('');
                                 setFiltroModalidad('');
                             }}
-                            className="text-xs text-indigo-400 hover:text-indigo-300 transition-colors flex items-center gap-1 px-3 py-1 rounded-lg bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/20"
+                            className="text-xs text-cyan-400 hover:text-cyan-300 transition-colors flex items-center gap-1 px-3 py-1 rounded-lg bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/20"
                         >
                             <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -298,11 +296,12 @@ export default function TestsDashboard() {
             ) : (
                 <div className="grid grid-cols-1 gap-8">
                     {usuariosFiltrados.map((user) => (
-                        <div key={user.idUsuario} className="bg-slate-800/40 rounded-3xl border border-slate-700/50 shadow-2xl backdrop-blur-sm overflow-hidden hover:border-indigo-500/30 transition-all duration-500 group">
+                        <div key={user.idUsuario} className="bg-slate-800/40 rounded-3xl border border-slate-700/50 shadow-2xl backdrop-blur-sm overflow-hidden hover:border-cyan-500/30 transition-all duration-500 group">
 
+                            {/* Header de Tarjeta */}
                             <div className="bg-gradient-to-r from-slate-900/80 to-slate-800/80 p-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-slate-700/50">
                                 <div className="flex items-center gap-4">
-                                    <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-500 to-cyan-500 flex items-center justify-center text-xl font-bold text-white shadow-lg shadow-indigo-500/20">
+                                    <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-cyan-500 to-teal-500 flex items-center justify-center text-xl font-bold text-white shadow-lg shadow-cyan-500/20 transform group-hover:scale-105 transition-transform duration-300">
                                         {user.idUsuario.charAt(0).toUpperCase()}
                                     </div>
                                     <div>
@@ -331,53 +330,52 @@ export default function TestsDashboard() {
                                     </div>
                                 </div>
                                 <div className="flex flex-col items-end">
-                                    <span className="text-sm text-slate-400">Tests Completados</span>
-                                    <span className="text-2xl font-bold text-white">
-                                        {user.tests.filter((t) => t.completado).length}{' '}
-                                        <span className="text-slate-500 text-lg">/ {user.tests.length}</span>
-                                    </span>
+                                    <span className="text-sm text-slate-400">Total de Disparos</span>
+                                    <span className="text-2xl font-bold text-white">{user.disparos.length}</span>
                                 </div>
                             </div>
 
+                            {/* Tabla */}
                             <div className="p-6">
-                                {user.tests.length > 0 ? (
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-5">
-                                        {user.tests.map((t, idx) => {
-                                            const total = t.aciertos + t.errores;
-                                            const porcentaje = total > 0 ? (t.aciertos / total) * 100 : 0;
-
-                                            return (
-                                                <div key={idx} className="relative bg-slate-900/60 rounded-2xl p-5 border border-slate-700/50 hover:bg-slate-800/80 transition-all duration-300">
-                                                    <div className="flex justify-between items-start mb-4">
-                                                        <span className="text-sm font-bold text-slate-300">{t.nombreTest}</span>
-                                                        <div className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${t.completado ? 'bg-green-500/10 text-green-400' : 'bg-amber-500/10 text-amber-400'}`}>
-                                                            {t.completado ? 'Finalizado' : 'Progreso'}
-                                                        </div>
-                                                    </div>
-
-                                                    <div className="space-y-2">
-                                                        <div className="flex justify-between text-xs text-green-400">
-                                                            <span>Aciertos</span>
-                                                            <span className="font-bold">{t.aciertos}</span>
-                                                        </div>
-                                                        <div className="flex justify-between text-xs text-red-400">
-                                                            <span>Errores</span>
-                                                            <span className="font-bold">{t.errores}</span>
-                                                        </div>
-                                                    </div>
-
-                                                    <div className="mt-4 w-full bg-slate-800 rounded-full h-1.5 overflow-hidden">
-                                                        <div
-                                                            className={`h-full transition-all duration-1000 ${t.completado ? 'bg-green-500' : 'bg-amber-500'}`}
-                                                            style={{ width: `${t.completado ? 100 : Math.max(10, porcentaje)}%` }}
-                                                        ></div>
-                                                    </div>
-                                                </div>
-                                            );
-                                        })}
+                                {user.disparos.length > 0 ? (
+                                    <div className="bg-slate-900/50 rounded-2xl border border-slate-700/50 overflow-hidden overflow-x-auto">
+                                        <table className="w-full text-left text-sm whitespace-nowrap">
+                                            <thead className="bg-slate-800/80 text-slate-300 border-b border-slate-700">
+                                                <tr>
+                                                    <th className="px-6 py-4 font-semibold">#</th>
+                                                    <th className="px-6 py-4 font-semibold">Ángulo</th>
+                                                    <th className="px-6 py-4 font-semibold">Distancia</th>
+                                                    <th className="px-6 py-4 font-semibold">Altura Máx.</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="divide-y divide-slate-700/50">
+                                                {user.disparos.map((disparo, index) => (
+                                                    <tr key={disparo.id} className="hover:bg-white/5 transition-colors">
+                                                        <td className="px-6 py-4 text-slate-400">{index + 1}</td>
+                                                        <td className="px-6 py-4">
+                                                            <span className="px-2.5 py-1 rounded-lg bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
+                                                                {Number(disparo.angulo || 0).toFixed(1)}°
+                                                            </span>
+                                                        </td>
+                                                        <td className="px-6 py-4">
+                                                            <span className="px-2.5 py-1 rounded-lg bg-teal-500/10 text-teal-400 border border-teal-500/20">
+                                                                {Number(disparo.distancia || 0).toFixed(2)} m
+                                                            </span>
+                                                        </td>
+                                                        <td className="px-6 py-4">
+                                                            <span className="px-2.5 py-1 rounded-lg bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
+                                                                {Number(disparo.altura || 0).toFixed(2)} m
+                                                            </span>
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
                                     </div>
                                 ) : (
-                                    <p className="text-center text-slate-500 py-4">Sin datos de tests</p>
+                                    <div className="text-center py-10 bg-slate-900/30 rounded-2xl border border-dashed border-slate-700">
+                                        <p className="text-slate-500">Sin datos de disparos</p>
+                                    </div>
                                 )}
                             </div>
                         </div>
