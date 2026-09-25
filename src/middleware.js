@@ -14,7 +14,20 @@ const isAdminPath = (pathname) => /^\/admin(\/|$)/.test(pathname);
 export const onRequest = defineMiddleware(async (context, next) => {
     const { url, cookies, redirect, locals } = context;
 
-    const session = await readSession(cookies.get(SESSION_COOKIE)?.value);
+    let session = null;
+    try {
+        session = await readSession(cookies.get(SESSION_COOKIE)?.value);
+    } catch (error) {
+        // Error de configuración (p. ej. falta SESSION_SECRET): las páginas
+        // públicas siguen funcionando, el panel responde 503.
+        console.error('[auth]', error);
+        if (isAdminPath(url.pathname)) {
+            return new Response('Panel no disponible: configuración del servidor incompleta. Revisa los logs.', {
+                status: 503,
+                headers: { 'Content-Type': 'text/plain; charset=utf-8' },
+            });
+        }
+    }
     locals.user = session;
 
     if (isAdminPath(url.pathname) && !session) {

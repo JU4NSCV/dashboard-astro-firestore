@@ -28,7 +28,9 @@ export default defineConfig({
       PUBLIC_FIREBASE_MESSAGING_SENDER_ID: envField.string({ context: 'client', access: 'public', optional: true }),
       PUBLIC_FIREBASE_APP_ID: envField.string({ context: 'client', access: 'public' }),
       PUBLIC_FIREBASE_MEASUREMENT_ID: envField.string({ context: 'client', access: 'public', optional: true }),
-      SESSION_SECRET: envField.string({ context: 'server', access: 'secret', min: 32 }),
+      // Opcional aquí para que un error de configuración no tumbe las páginas
+      // públicas: se valida al usarse en src/lib/server/session.js.
+      SESSION_SECRET: envField.string({ context: 'server', access: 'secret', optional: true }),
     },
   },
 

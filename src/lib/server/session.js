@@ -1,6 +1,6 @@
 // Solo servidor: verificación de tokens de Firebase y sesión firmada del panel.
 import { SignJWT, jwtVerify, createRemoteJWKSet } from 'jose';
-import { SESSION_SECRET } from 'astro:env/server';
+import { getSecret } from 'astro:env/server';
 import { PUBLIC_FIREBASE_PROJECT_ID as PROJECT_ID } from 'astro:env/client';
 
 export const SESSION_COOKIE = 'df_session';
@@ -14,7 +14,23 @@ const FIREBASE_JWKS = createRemoteJWKSet(
     new URL('https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com')
 );
 
-const secretKey = new TextEncoder().encode(SESSION_SECRET);
+export class ConfigError extends Error {}
+
+let secretKey;
+/** Lee y valida SESSION_SECRET al usarse (no al arrancar) con un mensaje claro. */
+function getSecretKey() {
+    if (secretKey) return secretKey;
+    const secret = getSecret('SESSION_SECRET');
+    if (!secret || secret.length < 32) {
+        throw new ConfigError(
+            secret
+                ? `SESSION_SECRET tiene ${secret.length} caracteres; se requieren al menos 32.`
+                : 'Falta la variable de entorno SESSION_SECRET (en Netlify debe tener alcance "Functions").'
+        );
+    }
+    secretKey = new TextEncoder().encode(secret);
+    return secretKey;
+}
 
 /** Verifica firma, emisor, audiencia y expiración de un ID token de Firebase. */
 export async function verifyFirebaseIdToken(idToken) {
@@ -52,14 +68,15 @@ export function createSession({ uid, email }) {
         .setAudience(SESSION_AUDIENCE)
         .setIssuedAt()
         .setExpirationTime(`${SESSION_MAX_AGE}s`)
-        .sign(secretKey);
+        .sign(getSecretKey());
 }
 
 /** Devuelve `{ uid, email }` si la cookie de sesión es válida, o `null`. */
 export async function readSession(token) {
     if (!token) return null;
+    const key = getSecretKey();
     try {
-        const { payload } = await jwtVerify(token, secretKey, {
+        const { payload } = await jwtVerify(token, key, {
             issuer: SESSION_ISSUER,
             audience: SESSION_AUDIENCE,
             algorithms: ['HS256'],

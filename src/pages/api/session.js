@@ -42,7 +42,13 @@ export async function POST({ request, cookies }) {
         return json({ error: 'not_admin', uid: claims.sub }, 403);
     }
 
-    const token = await createSession({ uid: claims.sub, email: claims.email });
+    let token;
+    try {
+        token = await createSession({ uid: claims.sub, email: claims.email });
+    } catch (error) {
+        console.error('[auth]', error);
+        return json({ error: 'server_misconfigured' }, 503);
+    }
     cookies.set(SESSION_COOKIE, token, sessionCookieOptions);
     return json({ ok: true });
 }
