@@ -43,7 +43,7 @@ Aquí viven las piezas reutilizables de la interfaz. Los `.astro` son estáticos
 - `firebase.js` 🔥: Contiene la inicialización del SDK de Firebase y la exportación de las instancias de `auth` y `db` (Firestore). ¡Es el corazón de la conexión de datos!
 
 ### 🔹 `src/middleware.js` 🛡️
-- Intercepta las peticiones de red. Su función principal es proteger las rutas que empiezan por `/admin`. Verifica si existe un token de sesión válido; si no, redirige al usuario a `/login`.
+- Intercepta las peticiones y protege las rutas que empiezan por `/admin`: valida la firma y expiración de la cookie de sesión HttpOnly `df_session` (creada por `POST /api/session` tras verificar el ID token de Firebase y el documento `admins/{uid}`). Si no es válida, redirige a `/login`. También añade cabeceras de seguridad. Ver README > Cómo funciona la seguridad.
 
 ### 🔹 `src/styles/` 🎨
 - `global.css`: Estilos globales base y directivas de Tailwind (`@tailwind base;`, etc.).
@@ -61,8 +61,8 @@ Aquí viven las piezas reutilizables de la interfaz. Los `.astro` son estáticos
 
 ## 🛠️ Comandos Útiles
 
-- `npm run dev`: Inicia el servidor de desarrollo en `localhost:4321`.
-- `npm run build`: Genera la versión de producción optimizada en la carpeta `dist/`.
-- `npm run preview`: Previsualiza la build de producción localmente.
+- `pnpm dev`: Inicia el servidor de desarrollo en `localhost:4321`.
+- `pnpm build`: Genera la versión de producción optimizada en la carpeta `dist/`.
+- `pnpm install`: Instala las dependencias (el proyecto usa pnpm).
 
 ¡Feliz código! 💻✨

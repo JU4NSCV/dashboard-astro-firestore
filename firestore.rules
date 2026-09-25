@@ -1,0 +1,50 @@
+rules_version = '2';
+
+// Reglas de seguridad de Firestore para DatosFísica.
+// Despliegue: Firebase Console > Firestore Database > Reglas (pegar y "Publicar"),
+// o con la CLI: `firebase deploy --only firestore:rules`.
+//
+// IMPORTANTE: revisa la sección "usuarios" contra la forma en que el juego de
+// Unity escribe los datos antes de publicar (ver README > Reglas de Firestore).
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return signedIn() && request.auth.uid == userId;
+    }
+
+    // Un administrador es quien tiene un documento en admins/{uid}.
+    // Esos documentos solo se crean desde la consola de Firebase.
+    function isAdmin() {
+      return signedIn() && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    }
+
+    match /admins/{uid} {
+      allow get: if isOwner(uid);
+      allow list, write: if false;
+    }
+
+    // Datos de cada estudiante: solo el propio estudiante (juego) y los administradores.
+    match /usuarios/{userId} {
+      allow read: if isAdmin() || isOwner(userId);
+      allow write: if isOwner(userId);
+
+      match /{subcoleccion=**} {
+        allow read: if isAdmin() || isOwner(userId);
+        allow write: if isOwner(userId);
+      }
+    }
+
+    // Consultas de grupo de colecciones que usa el panel.
+    match /{path=**}/formulario/{docId} {
+      allow read: if isAdmin();
+    }
+    match /{path=**}/disparos/{docId} {
+      allow read: if isAdmin();
+    }
+  }
+}

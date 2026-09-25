@@ -1,20 +1,28 @@
-import { initializeApp } from "firebase/app";
-import { getFirestore } from "firebase/firestore"; // Importa Firestore
-import { getAuth } from "firebase/auth";
+import { getApp, getApps, initializeApp } from 'firebase/app';
+import { getFirestore } from 'firebase/firestore';
+import { getAuth } from 'firebase/auth';
+import {
+    PUBLIC_FIREBASE_API_KEY,
+    PUBLIC_FIREBASE_AUTH_DOMAIN,
+    PUBLIC_FIREBASE_PROJECT_ID,
+    PUBLIC_FIREBASE_STORAGE_BUCKET,
+    PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+    PUBLIC_FIREBASE_APP_ID,
+    PUBLIC_FIREBASE_MEASUREMENT_ID,
+} from 'astro:env/client';
+
 const firebaseConfig = {
-  apiKey: import.meta.env.PUBLIC_FIREBASE_API_KEY,
-  authDomain: import.meta.env.PUBLIC_FIREBASE_AUTH_DOMAIN,
-  projectId: import.meta.env.PUBLIC_FIREBASE_PROJECT_ID,
-  storageBucket: import.meta.env.PUBLIC_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: import.meta.env.PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
-  appId: import.meta.env.PUBLIC_FIREBASE_APP_ID,
-  measurementId: import.meta.env.PUBLIC_FIREBASE_MEASUREMENT_ID,
+    apiKey: PUBLIC_FIREBASE_API_KEY,
+    authDomain: PUBLIC_FIREBASE_AUTH_DOMAIN,
+    projectId: PUBLIC_FIREBASE_PROJECT_ID,
+    storageBucket: PUBLIC_FIREBASE_STORAGE_BUCKET,
+    messagingSenderId: PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+    appId: PUBLIC_FIREBASE_APP_ID,
+    measurementId: PUBLIC_FIREBASE_MEASUREMENT_ID,
 };
 
-// Inicializa Firebase
-const app = initializeApp(firebaseConfig);
+// Reutiliza la app si ya existe (HMR en desarrollo)
+const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
 
-// Exporta la base de datos para usarla en todo el proyecto
 export const db = getFirestore(app);
-
 export const auth = getAuth(app);

@@ -30,3 +30,6 @@ pnpm-debug.log*
 
 
 .vscode/
+# Firebase CLI
+.firebase/
+firebase-debug.log

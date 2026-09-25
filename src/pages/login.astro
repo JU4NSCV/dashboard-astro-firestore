@@ -2,87 +2,133 @@
 import Layout from "../layouts/Layout.astro";
 ---
 
-<Layout title="Login Admin">
-    <div
-        class="min-h-screen flex items-center justify-center bg-slate-950 px-4"
-    >
+<Layout title="Acceso docente | DatosFísica" noindex>
+    <div class="relative flex items-center justify-center px-4 py-12 md:py-20 overflow-hidden">
         <div
-            class="max-w-md w-full bg-slate-900/50 border border-white/10 p-8 rounded-3xl backdrop-blur-xl shadow-2xl"
+            class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-indigo-600/15 rounded-full blur-[120px] pointer-events-none"
         >
-            <h1 class="text-3xl font-bold text-white mb-6 text-center">
-                Acceso Administrativo
-            </h1>
+        </div>
 
-            <form id="login-form" class="space-y-4">
+        <div
+            class="relative max-w-md w-full bg-slate-900/60 border border-white/10 p-8 rounded-3xl backdrop-blur-xl shadow-2xl"
+        >
+            <h1 class="text-3xl font-bold text-white text-center">Acceso docente</h1>
+            <p class="text-slate-400 text-sm text-center mt-2 mb-8">
+                Ingresa con tu cuenta de administrador para ver el panel.
+            </p>
+
+            <form id="login-form" class="space-y-4" novalidate>
                 <div>
-                    <label class="block text-slate-400 text-sm mb-2"
-                        >Correo Electrónico</label
-                    >
+                    <label for="email" class="block text-slate-300 text-sm mb-2">Correo electrónico</label>
                     <input
                         type="email"
                         id="email"
+                        name="email"
+                        autocomplete="username"
                         required
-                        class="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white focus:border-indigo-500 outline-none transition-all"
+                        class="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/30 outline-none transition-all"
                     />
                 </div>
                 <div>
-                    <label class="block text-slate-400 text-sm mb-2"
-                        >Contraseña</label
-                    >
+                    <label for="password" class="block text-slate-300 text-sm mb-2">Contraseña</label>
                     <input
                         type="password"
                         id="password"
+                        name="password"
+                        autocomplete="current-password"
                         required
-                        class="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white focus:border-indigo-500 outline-none transition-all"
+                        class="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/30 outline-none transition-all"
                     />
                 </div>
                 <button
                     type="submit"
-                    class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 rounded-xl transition-all shadow-lg shadow-indigo-500/20"
+                    id="submit-btn"
+                    class="w-full bg-indigo-600 hover:bg-indigo-500 disabled:opacity-60 disabled:cursor-wait text-white font-bold py-3 rounded-xl transition-colors shadow-lg shadow-indigo-500/20"
                 >
-                    Entrar al Panel
+                    Entrar al panel
                 </button>
             </form>
-            <p
-                id="error-msg"
-                class="text-red-400 text-sm mt-4 text-center hidden"
-            >
-            </p>
+
+            <p id="error-msg" role="alert" class="text-red-400 text-sm mt-4 text-center hidden"></p>
         </div>
     </div>
 </Layout>
 
 <script>
+    import { signInWithEmailAndPassword, signOut } from "firebase/auth";
     import { auth } from "../lib/firebase";
-    import { signInWithEmailAndPassword } from "firebase/auth";
+    import { crearSesionServidor } from "../lib/session-client";
 
-    const form = document.getElementById("login-form");
-    const errorMsg = document.getElementById("error-msg");
+    const form = document.getElementById("login-form") as HTMLFormElement;
+    const submitBtn = document.getElementById("submit-btn") as HTMLButtonElement;
+    const errorMsg = document.getElementById("error-msg") as HTMLParagraphElement;
 
-    form?.addEventListener("submit", async (e) => {
-        e.preventDefault();
-        const email = (document.getElementById("email") as HTMLInputElement)
-            .value;
-        const password = (
-            document.getElementById("password") as HTMLInputElement
-        ).value;
+    const next = new URLSearchParams(window.location.search).get("next");
+    const destino = next && /^\/admin(\/[\w\-/]*)?$/.test(next) ? next : "/admin/stats";
 
+    const MENSAJES: Record<string, string> = {
+        "auth/invalid-credential": "Correo o contraseña incorrectos.",
+        "auth/invalid-email": "El correo electrónico no es válido.",
+        "auth/user-disabled": "Esta cuenta está deshabilitada.",
+        "auth/too-many-requests": "Demasiados intentos. Espera unos minutos e inténtalo de nuevo.",
+        "auth/network-request-failed": "No hay conexión con el servidor. Revisa tu internet.",
+        invalid_token: "No se pudo validar tu sesión. Inténtalo de nuevo.",
+        admin_check_failed: "No se pudo verificar tus permisos. Inténtalo más tarde.",
+    };
+
+    function mostrarError(texto: string) {
+        errorMsg.textContent = texto;
+        errorMsg.classList.remove("hidden");
+    }
+
+    function setCargando(cargando: boolean) {
+        submitBtn.disabled = cargando;
+        submitBtn.textContent = cargando ? "Verificando…" : "Entrar al panel";
+    }
+
+    async function iniciarSesionServidor() {
         try {
-            const userCredential = await signInWithEmailAndPassword(
-                auth,
-                email,
-                password,
-            );
-            const idToken = await userCredential.user.getIdToken();
-
-            // Guardamos el token en una cookie para que el servidor lo vea
-            document.cookie = `session=${idToken}; path=/; max-age=3600; SameSite=Strict`;
-
-            // Redirigir al dashboard
-            window.location.href = "/admin/stats";
-        } catch (error) {
-            errorMsg!.textContent = "Credenciales inválidas";
-            errorMsg!.classList.remove("hidden");
+            await crearSesionServidor(auth.currentUser!);
+            window.location.replace(destino);
+        } catch (error: any) {
+            if (error.code === "not_admin") {
+                await signOut(auth);
+                mostrarError(
+                    `Esta cuenta no tiene permisos de administrador. Pide que registren tu UID en la colección "admins": ${error.uid}`,
+                );
+            } else {
+                mostrarError(MENSAJES[error.code] ?? "No se pudo iniciar sesión.");
+            }
+            setCargando(false);
         }
+    }
+
+    // Si Firebase ya tiene una sesión guardada (la cookie del servidor expiró), renovarla sin pedir la contraseña.
+    setCargando(true);
+    auth.authStateReady().then(() => {
+        if (auth.currentUser) iniciarSesionServidor();
+        else setCargando(false);
+    });
+
+    form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        errorMsg.classList.add("hidden");
+
+        const email = (form.elements.namedItem("email") as HTMLInputElement).value.trim();
+        const password = (form.elements.namedItem("password") as HTMLInputElement).value;
+        if (!email || !password) {
+            mostrarError("Completa el correo y la contraseña.");
+            return;
+        }
+
+        setCargando(true);
+        try {
+            await signInWithEmailAndPassword(auth, email, password);
+        } catch (error: any) {
+            mostrarError(MENSAJES[error?.code] ?? "No se pudo iniciar sesión.");
+            setCargando(false);
+            return;
+        }
+        await iniciarSesionServidor();
     });
 </script>

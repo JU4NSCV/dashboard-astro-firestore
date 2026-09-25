@@ -5,26 +5,42 @@ import Footer from "../components/layout/Footer.astro";
 
 interface Props {
 	title?: string;
+	description?: string;
+	/** Evita que buscadores indexen páginas privadas (panel, login). */
+	noindex?: boolean;
 }
 
-const { title = "Dashboard Física" } = Astro.props;
+const {
+	title = "DatosFísica",
+	description = "Panel de análisis del simulador educativo de tiro parabólico desarrollado en Unity.",
+	noindex = false,
+} = Astro.props;
 ---
 
 <!doctype html>
 <html lang="es">
 	<head>
 		<meta charset="UTF-8" />
-		<meta name="viewport" content="width=device-width" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<meta name="description" content={description} />
+		<meta name="theme-color" content="#0b0f19" />
+		<meta name="color-scheme" content="dark" />
+		{noindex && <meta name="robots" content="noindex, nofollow" />}
 		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-		<link rel="icon" href="/favicon.ico" />
+		<link rel="icon" href="/favicon.ico" sizes="32x32" />
 		<meta name="generator" content={Astro.generator} />
 		<title>{title}</title>
 	</head>
 	<body
 		class="bg-[#0b0f19] text-slate-200 min-h-screen flex flex-col font-sans antialiased selection:bg-indigo-500 selection:text-white"
 	>
+		<a
+			href="#contenido"
+			class="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-[60] focus:px-4 focus:py-2 focus:rounded-lg focus:bg-white focus:text-slate-900"
+			>Saltar al contenido</a
+		>
 		<Header />
-		<main class="flex-1 pt-24 pb-8">
+		<main id="contenido" class="flex-1 pt-24 pb-8">
 			<slot />
 		</main>
 		<Footer />
